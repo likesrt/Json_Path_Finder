@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Path Finder</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+    <div class="bg-decoration" aria-hidden="true"></div>
+
+    <header class="app-header">
+        <div class="app-shell header-shell">
+            <div class="brand">
+                <div class="brand-mark">
+                    <span class="icon" data-icon="code" aria-hidden="true"></span>
+                </div>
+                <div>
+                    <h1 class="logo-text">JSON Path Finder</h1>
+                    <p class="brand-subtitle">解析 · 美化 · 路径提取 · 多语言代码</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="theme-controls" aria-label="主题切换">
+                    <!-- <span class="label-text">主题</span> -->
+                    <button
+                        id="themeToggleButton"
+                        class="theme-cycle-button"
+                        type="button"
+                        onclick="cycleTheme()"
+                        aria-label="当前主题：跟随系统，点击切换到深色"
+                        title="当前主题：跟随系统，点击切换到深色"
+                    >
+                        <span class="icon" id="themeToggleIcon" data-icon="theme-system" aria-hidden="true"></span>
+                        <span id="themeToggleText">跟随系统</span>
+                    </button>
+                </div>
+                <span id="statusIndicator" class="status-inline">
+                    <span class="status-dot idle"></span>
+                    <span id="statusText">等待输入</span>
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+    <div id="icon-sprite-container" class="icon-sprite-container" aria-hidden="true"></div>
+
+    <main class="main-shell">
+        <div class="main-grid">
+            <section class="column" aria-label="输入与路径列表">
+                <div class="panel">
+                    <div class="panel-header">
+                        <span class="panel-title"><span class="icon" data-icon="code"></span>JSON 输入</span>
+                        <div class="panel-header-actions">
+                            <button class="btn" type="button" onclick="loadSample()" title="加载示例数据" aria-label="加载示例 JSON 数据">
+                                <span class="icon" data-icon="sample"></span>示例
+                            </button>
+                            <button class="btn btn-danger" type="button" onclick="clearInput()" title="清空输入与结果" aria-label="清空输入与结果">
+                                <span class="icon" data-icon="clear"></span>清空
+                            </button>
+                        </div>
+                    </div>
+                    <div class="input-wrap">
+                        <textarea
+                            id="jsonInput"
+                            class="json-input"
+                            placeholder='在此粘贴 JSON 数据，例如：&#10;{&#10;  "name": "张三",&#10;  "skill-set": ["Vue", "Go"],&#10;  "基础信息.扩展": { "城市": "上海" }&#10;}'
+                            spellcheck="false"
+                            aria-label="JSON 输入框"
+                            title="可直接粘贴 JSON，支持粘贴后自动解析与拖拽文件"
+                        ></textarea>
+                    </div>
+                    <div class="button-row">
+                        <button class="btn btn-primary" type="button" onclick="parseAndRender()" title="解析并渲染 JSON 树" aria-label="解析并渲染 JSON 树">
+                            <span class="icon" data-icon="play"></span>解析美化
+                        </button>
+                        <button class="btn" type="button" onclick="formatInput()" title="格式化输入框中的 JSON" aria-label="格式化 JSON 输入">
+                            <span class="icon" data-icon="format"></span>格式化
+                        </button>
+                        <button class="btn" type="button" onclick="compressInput()" title="压缩为单行 JSON" aria-label="压缩 JSON 输入">
+                            <span class="icon" data-icon="compress"></span>压缩
+                        </button>
+                        <button class="btn" type="button" onclick="copyInput()" title="复制输入内容" aria-label="复制 JSON 输入内容">
+                            <span class="icon" data-icon="copy"></span>复制
+                        </button>
+                        <button class="btn mobile-only" type="button" onclick="focusPathList()" title="定位到路径列表" aria-label="定位到路径列表">
+                            <span class="icon" data-icon="list"></span>看路径
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel panel-fill path-list-panel">
+                    <div class="panel-header">
+                        <span class="panel-title"><span class="icon" data-icon="tree"></span>全部路径 <span id="pathCount" style="color:var(--accent);margin-left:4px;">0</span></span>
+                        <div class="panel-header-actions">
+                            <button class="btn" type="button" onclick="extractAllPaths(true)" title="重新提取所有路径" aria-label="重新提取所有路径">
+                                <span class="icon" data-icon="refresh"></span>刷新
+                            </button>
+                            <button class="btn" type="button" onclick="copyAllPaths()" title="复制全部路径" aria-label="复制全部路径">
+                                <span class="icon" data-icon="copy"></span>复制
+                            </button>
+                        </div>
+                    </div>
+                    <div class="search-wrap">
+                        <div class="search-box">
+                            <span class="icon search-icon" data-icon="search" aria-hidden="true"></span>
+                            <input id="pathSearch" class="search-input" placeholder="搜索路径、值或类型..." oninput="filterPaths()" aria-label="搜索路径列表">
+                        </div>
+                    </div>
+                    <div id="pathList" class="path-list" tabindex="0" aria-label="全部路径列表"></div>
+                </div>
+            </section>
+
+            <section class="column" aria-label="树形视图与详情">
+                <div class="panel panel-fill tree-panel">
+                    <div class="panel-header">
+                        <span class="panel-title"><span class="icon" data-icon="tree"></span>JSON 树形视图</span>
+                        <div class="panel-header-actions">
+                            <button class="btn" type="button" onclick="expandAll()" title="展开全部节点" aria-label="展开全部节点">
+                                <span class="icon" data-icon="expand"></span>展开
+                            </button>
+                            <button class="btn" type="button" onclick="collapseAll()" title="折叠全部节点" aria-label="折叠全部节点">
+                                <span class="icon" data-icon="collapse"></span>折叠
+                            </button>
+                            <button class="btn mobile-only" type="button" onclick="focusDetails()" title="定位到详情区域" aria-label="定位到详情区域">
+                                <span class="icon" data-icon="details"></span>当前项
+                            </button>
+                        </div>
+                    </div>
+                    <div id="treeView" class="tree-container" aria-label="JSON 树形视图"></div>
+                </div>
+
+                <div class="panel" id="detailsPanel">
+                    <div class="side-tabs" role="tablist" aria-label="底部功能切换">
+                        <button class="side-tab active" type="button" data-tab="pathInfo" onclick="switchBottomTab(this, 'pathInfo')" role="tab" aria-selected="true" title="查看当前路径信息">
+                            路径详情
+                        </button>
+                        <button class="side-tab" type="button" data-tab="codeGen" onclick="switchBottomTab(this, 'codeGen')" role="tab" aria-selected="false" title="查看多语言代码示例">
+                            代码生成
+                        </button>
+                    </div>
+
+                    <div id="tab-pathInfo" class="bottom-panel-body">
+                        <div style="margin-bottom:12px;">
+                            <div class="section-header">
+                                <label class="section-label">当前路径</label>
+                                <button class="btn" type="button" onclick="copyCurrentPath()" title="复制当前路径" aria-label="复制当前路径">
+                                    <span class="icon" data-icon="copy"></span>复制路径
+                                </button>
+                            </div>
+                            <div id="currentPath" class="path-display"></div>
+                        </div>
+
+                        <div style="margin-bottom:12px;">
+                            <div class="section-header">
+                                <label class="section-label">JSONPath</label>
+                                <button class="btn" type="button" onclick="copyCurrentJsonPath()" title="复制当前 JSONPath" aria-label="复制当前 JSONPath 表达式">
+                                    <span class="icon" data-icon="copy"></span>复制 JSONPath
+                                </button>
+                            </div>
+                            <div id="currentJsonPath" class="meta-card">未选择路径</div>
+                        </div>
+
+                        <div class="detail-grid">
+                            <div>
+                                <label class="section-label">值</label>
+                                <div id="currentValue" class="value-preview">—</div>
+                            </div>
+                            <div>
+                                <label class="section-label">类型</label>
+                                <div id="currentType" class="value-preview">—</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="tab-codeGen" class="bottom-panel-body hidden">
+                        <div class="code-panel">
+                            <div class="code-panel-header">
+                                <div>
+                                    <label class="section-label">提取代码 — 多语言示例</label>
+                                    <div class="code-panel-title">推荐写法</div>
+                                </div>
+                                <div class="lang-tabs" id="langTabs" role="tablist" aria-label="语言切换">
+                                    <button class="lang-tab active" type="button" data-lang="javascript" onclick="switchLang(this)" role="tab" aria-selected="true">JavaScript</button>
+                                    <button class="lang-tab" type="button" data-lang="python" onclick="switchLang(this)" role="tab" aria-selected="false">Python</button>
+                                    <button class="lang-tab" type="button" data-lang="java" onclick="switchLang(this)" role="tab" aria-selected="false">Java</button>
+                                    <button class="lang-tab" type="button" data-lang="go" onclick="switchLang(this)" role="tab" aria-selected="false">Go</button>
+                                    <button class="lang-tab" type="button" data-lang="php" onclick="switchLang(this)" role="tab" aria-selected="false">PHP</button>
+                                    <button class="lang-tab" type="button" data-lang="csharp" onclick="switchLang(this)" role="tab" aria-selected="false">C#</button>
+                                    <button class="lang-tab" type="button" data-lang="rust" onclick="switchLang(this)" role="tab" aria-selected="false">Rust</button>
+                                </div>
+                            </div>
+                            <div class="code-single">
+                                <div id="codeRecommended" class="code-block"></div>
+                                <div id="codeRecommendedResult" class="code-result">结果示例会显示在这里</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="assets/js/icons.js"></script>
+    <script src="assets/js/app.js"></script>
+</body>
+</html>
