@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Path Finder Extension</title>
+    <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="app-header">
+            <div>
+                <h1>JSON Path Finder</h1>
+                <p>Chrome Side Panel</p>
+            </div>
+            <div class="header-actions">
+                <button id="themeToggleButton" class="ghost-button" type="button">跟随系统</button>
+                <span id="statusText" class="status-text">等待输入</span>
+            </div>
+        </header>
+
+        <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+        <main class="panel-stack">
+            <section class="card">
+                <div class="card-header">
+                    <h2>JSON 输入</h2>
+                    <div class="toolbar toolbar-tight">
+                        <button id="loadSampleButton" type="button">示例</button>
+                        <button id="clearButton" type="button">清空</button>
+                    </div>
+                </div>
+                <textarea id="jsonInput" class="json-input" spellcheck="false" placeholder="在此粘贴 JSON 数据"></textarea>
+                <div class="toolbar">
+                    <button id="parseButton" class="primary-button" type="button">解析美化</button>
+                    <button id="formatButton" type="button">格式化</button>
+                    <button id="compressButton" type="button">压缩</button>
+                    <button id="copyInputButton" type="button">复制</button>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
+                    <h2>路径列表</h2>
+                    <div class="toolbar toolbar-tight">
+                        <button id="refreshPathsButton" type="button">刷新</button>
+                        <button id="copyPathsButton" type="button">复制全部</button>
+                    </div>
+                </div>
+                <input id="pathSearch" class="search-input" type="search" placeholder="搜索路径、值或类型">
+                <div id="pathCount" class="meta-inline">0 条路径</div>
+                <div id="pathList" class="path-list"></div>
+            </section>
+
+            <section class="card card-stretch">
+                <div class="card-header">
+                    <h2>树形视图</h2>
+                    <div class="toolbar toolbar-tight">
+                        <button id="expandButton" type="button">展开</button>
+                        <button id="collapseButton" type="button">折叠</button>
+                    </div>
+                </div>
+                <div id="treeView" class="tree-view"></div>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
+                    <h2>路径详情</h2>
+                    <div class="toolbar toolbar-tight">
+                        <button id="copyPathButton" type="button">复制路径</button>
+                        <button id="copyJsonPathButton" type="button">复制 JSONPath</button>
+                    </div>
+                </div>
+                <div class="detail-block">
+                    <span class="detail-label">当前路径</span>
+                    <div id="currentPath" class="detail-value mono-box">未选择路径</div>
+                </div>
+                <div class="detail-block">
+                    <span class="detail-label">JSONPath</span>
+                    <div id="currentJsonPath" class="detail-value mono-box">未选择路径</div>
+                </div>
+                <div class="detail-grid">
+                    <div>
+                        <span class="detail-label">类型</span>
+                        <div id="currentType" class="detail-value mono-box">-</div>
+                    </div>
+                    <div>
+                        <span class="detail-label">值</span>
+                        <div id="currentValue" class="detail-value mono-box">-</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-header vertical-header">
+                    <div>
+                        <h2>推荐写法代码示例</h2>
+                        <p class="card-subtitle">根据当前选中路径生成</p>
+                    </div>
+                    <div id="languageTabs" class="language-tabs">
+                        <button class="lang-tab active" type="button" data-lang="javascript">JS</button>
+                        <button class="lang-tab" type="button" data-lang="python">Python</button>
+                        <button class="lang-tab" type="button" data-lang="java">Java</button>
+                        <button class="lang-tab" type="button" data-lang="go">Go</button>
+                        <button class="lang-tab" type="button" data-lang="php">PHP</button>
+                        <button class="lang-tab" type="button" data-lang="csharp">C#</button>
+                        <button class="lang-tab" type="button" data-lang="rust">Rust</button>
+                    </div>
+                </div>
+                <div class="code-actions">
+                    <button id="copyCodeButton" type="button">复制代码</button>
+                </div>
+                <pre id="codeRecommended" class="code-block">选择路径后生成代码示例</pre>
+                <div id="codeResult" class="result-box">结果示例会显示在这里</div>
+            </section>
+        </main>
+    </div>
+
+    <script src="sidepanel.js"></script>
+</body>
+</html>

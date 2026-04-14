@@ -84,12 +84,13 @@ function renderIcons() {
 }
 
 /**
- * 显示轻量通知，提示成功或失败信息。
+ * 显示轻量通知，并在渲染前刷新 header 偏移，避免 toast 遮住顶部操作区。
  * @param {string} message 通知文本。
  * @param {'success'|'error'} [type='success'] 通知类型，决定颜色和图标。
- * @returns {void} 该函数仅操作 DOM，不返回值。
+ * @returns {void} 该函数会写入 toast 容器，并在约 2.5 秒后触发移除动画。
  */
 function showToast(message, type = 'success') {
+    updateHeaderOffset();
     const container = document.getElementById('toast-container');
     const toast = document.createElement('div');
     const iconName = type === 'error' ? 'error' : 'success';
@@ -1535,17 +1536,118 @@ function copyAllPaths() {
 }
 
 /**
+ * 判断当前环境是否可以优先使用 Clipboard API。
+ * @returns {boolean} 仅在安全上下文且存在可调用的 writeText 时返回 true。
+ */
+function canUseClipboardApi() {
+    return window.isSecureContext && !!navigator.clipboard && typeof navigator.clipboard.writeText === 'function';
+}
+
+/**
+ * 记录当前焦点元素与选区，便于 fallback 复制后恢复用户上下文。
+ * @returns {{activeElement:Element|null,ranges:Range[],inputSelection:{start:number,end:number,direction:string|null}|null}} 保存的焦点元素、文档选区和输入框选区快照。
+ */
+function captureSelectionState() {
+    const selection = window.getSelection();
+    const activeElement = document.activeElement;
+    const ranges = selection ? Array.from({ length: selection.rangeCount }, (_, index) => selection.getRangeAt(index).cloneRange()) : [];
+    const inputSelection = activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement
+        ? { start: activeElement.selectionStart ?? 0, end: activeElement.selectionEnd ?? 0, direction: activeElement.selectionDirection }
+        : null;
+    return { activeElement, ranges, inputSelection };
+}
+
+/**
+ * 恢复 fallback 复制前的焦点和选区，尽量减少对用户操作状态的干扰。
+ * @param {{activeElement:Element|null,ranges:Range[],inputSelection:{start:number,end:number,direction:string|null}|null}} state 之前保存的焦点与选区快照。
+ * @returns {void} 不存在可恢复内容时会直接跳过。
+ */
+function restoreSelectionState(state) {
+    const selection = window.getSelection();
+    if (selection) {
+        selection.removeAllRanges();
+        state.ranges.forEach((range) => selection.addRange(range));
+    }
+    if (!(state.activeElement instanceof HTMLElement)) return;
+    state.activeElement.focus({ preventScroll: true });
+    if (!state.inputSelection) return;
+    if (state.activeElement instanceof HTMLInputElement || state.activeElement instanceof HTMLTextAreaElement) {
+        state.activeElement.setSelectionRange(state.inputSelection.start, state.inputSelection.end, state.inputSelection.direction || 'none');
+    }
+}
+
+/**
+ * 创建用于传统复制方案的隐藏 textarea，不影响页面布局但允许移动端正常选中。
+ * @param {string} text 待复制文本。
+ * @returns {HTMLTextAreaElement} 已写入文本并完成样式设置的 textarea 元素。
+ */
+function createClipboardTextarea(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.setAttribute('aria-hidden', 'true');
+    textarea.style.position = 'fixed';
+    textarea.style.top = '0';
+    textarea.style.left = '0';
+    textarea.style.opacity = '0';
+    textarea.style.pointerEvents = 'none';
+    document.body.appendChild(textarea);
+    return textarea;
+}
+
+/**
+ * 使用隐藏 textarea 和 execCommand 执行兼容复制，并尽量恢复原有焦点与选区。
+ * @param {string} text 待复制文本。
+ * @returns {boolean} execCommand 返回 true 视为复制成功，否则返回 false。
+ */
+function copyTextWithExecCommand(text) {
+    const state = captureSelectionState();
+    const textarea = createClipboardTextarea(text);
+    let copied = false;
+    try {
+        textarea.focus({ preventScroll: true });
+        textarea.select();
+        textarea.setSelectionRange(0, textarea.value.length);
+        copied = document.execCommand('copy');
+    } catch {
+        copied = false;
+    }
+    textarea.remove();
+    restoreSelectionState(state);
+    return copied;
+}
+
+/**
+ * 优先使用 Clipboard API 复制文本；不可用或失败时回退到 execCommand 方案。
+ * @param {string} text 待复制文本。
+ * @returns {Promise<void>} 任一方案成功即 resolve，全部失败时 reject。
+ */
+async function writeClipboardText(text) {
+    if (canUseClipboardApi()) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return;
+        } catch {
+            // 安全上下文下也可能被权限策略、浏览器限制或用户手势要求拦截，因此继续尝试传统复制方案。
+        }
+    }
+    if (copyTextWithExecCommand(text)) return;
+    throw new Error('Clipboard unavailable');
+}
+
+/**
  * 把文本复制到剪贴板，并统一处理成功与失败提示。
  * @param {string} text 待复制文本。
  * @param {string} successMessage 复制成功后的提示。
- * @returns {void} 在不支持 Clipboard API 时会提示失败。
+ * @returns {Promise<void>} 成功时提示成功，双重方案都失败时提示失败。
  */
-function copyText(text, successMessage) {
-    navigator.clipboard.writeText(text).then(() => {
+async function copyText(text, successMessage) {
+    try {
+        await writeClipboardText(text);
         showToast(successMessage);
-    }).catch(() => {
+    } catch {
         showToast('复制失败，请手动复制', 'error');
-    });
+    }
 }
 
 /**

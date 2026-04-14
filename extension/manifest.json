@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "JSON Path Finder Side Panel",
+  "description": "在 Chrome 侧边栏中解析 JSON、查看树形结构并提取路径。",
+  "version": "1.0.0",
+  "permissions": ["sidePanel", "storage"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "打开 JSON Path Finder"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  }
+}
