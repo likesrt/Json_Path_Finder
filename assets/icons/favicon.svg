@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="JSON Path Finder favicon">
+  <defs>
+    <linearGradient id="faviconBg" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="faviconAccent" x1="18" y1="18" x2="46" y2="46" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#22c55e"/>
+    </linearGradient>
+  </defs>
+  <rect x="6" y="6" width="52" height="52" rx="14" fill="url(#faviconBg)"/>
+  <path d="M23 20 14 32l9 12" fill="none" stroke="url(#faviconAccent)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M41 20 50 32l-9 12" fill="none" stroke="url(#faviconAccent)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="6" fill="#f8fafc"/>
+  <path d="M32 14v12M32 38v12M14 32h12M38 32h12" fill="none" stroke="#f8fafc" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+</svg>
